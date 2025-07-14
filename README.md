@@ -1,4 +1,4 @@
-# Image_background_subtraction
+# UnBack
 This repository includes methodologies for subtracting the background in fluorescence microscopy images.
 
  Uneven_background_correction:

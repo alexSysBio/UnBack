@@ -13,7 +13,7 @@ Changes from version 1:
 1. Circular margin. Pixels closer than `dilation` px (Euclidean distance) to a cell are excluded. Version 1
    grew the cell mask with binary_dilation(iterations=dilation), which gives a diamond whose diagonal reach
    is only dilation / sqrt(2) (21 px for 30), while the glow of bright cells (out-of-focus and scattered
-   light) still adds ~60 counts at 20-30 px (HupA-mCherry, stationary phase).
+   light) still adds ~80 counts at 20-30 px and ~40 at 30-40 px (HupA-mCherry, stationary phase).
 2. Cell masks. `cell_masks` (e.g. the Omnipose labels) are excluded together with the Otsu mask of the
    inverted phase image (`phase_mask`); either can also be given alone.
 3. Empty tiles. Tiles with fewer than `min_pixels` cell-free pixels are left out, and the surface is computed
@@ -100,10 +100,13 @@ def cell_free_bkg_estimation(signal_image, free, step=ESTIMATION_STEP, smoothing
     fill = np.median(med[valid])
     if smoothing_sigma and smoothing_sigma > 0:
         values = np.kron(np.where(valid, med, 0.0), block)[:H, :W]
-        weights = np.kron(valid.astype(float), block)[:H, :W]
         num = ndimage.gaussian_filter(values, smoothing_sigma)
-        den = ndimage.gaussian_filter(weights, smoothing_sigma)
-        surface = np.where(den > 1e-6, num / np.maximum(den, 1e-12), fill)
+        if valid.all():                     # weights all 1: their smoothing is 1 everywhere (as in version 1)
+            surface = num
+        else:
+            weights = np.kron(valid.astype(float), block)[:H, :W]
+            den = ndimage.gaussian_filter(weights, smoothing_sigma)
+            surface = np.where(den > 1e-6, num / np.maximum(den, 1e-12), fill)
     else:
         surface = np.kron(np.where(valid, med, fill), block)[:H, :W]
     return surface, med, count
